@@ -14,11 +14,31 @@
 
 ----------------------------------------------------------
 
+github 上传拉取 卡住不动
+	https://www.ipaddress.com/
+	查询 github.global.ssl.fastly.net 和 github.com 两个地址
+	修改C:\Windows\System32\drivers\etc\hosts
+	linux/mac执行sudo /etc/init.d/networking restart命令；
+	windows在cmd中输入ipconfig /flushdns命令
+
+上传图片
+	https://www.cnblogs.com/fozero/p/8835628.html
+        var formFile = new FormData();
+        formFile.append("img", $('#upload').get(0).files[0]);
+
+----------------------------------------------------------
+
+2020/01/11 详细记录
+
+----------------------------------------------------------
+
+
+
 
 
 ----------------------------------------------------------
 
-2020/XX/XX 详细记录
+2020/01/12 详细记录
 
 ----------------------------------------------------------
 
