@@ -99,6 +99,37 @@ charles与爬虫的结合，APP爬取https需要ssl证书
 https://blog.csdn.net/ShadowySpirits/article/details/79756274
 
 ----------------------------------------------------------
+
+2020/01/14 详细记录
+
+----------------------------------------------------------
+
+今天给博客增加了错误的工厂类，以及日志模块
+以下是日志模块多线程解决的一些方案
+https://www.jianshu.com/p/ab7fbe6f8f3c
+https://www.jianshu.com/p/d615bf01e37b
+
+下午增加了下猴子补丁的功能
+通过增加models.Model的属性
+再通过classmethod、装饰器等方法
+在__init__上动态添加功能
+
+linux上全局替换
+grep -rl objects.get . --exclude-dir=lib | xargs sed 's/objects.get/get/g'
+
+晚上学习了使用原始redis
+修改原始redis，后台celery计算推荐的人存进redis
+后面就从redis里面取值
+rds.zrevrange('Hot-Rank', 0, config.TOP_N, withscores=True)
+users = sorted(users, key=lambda user: uid_list.index(user.id))
+rds.zincrby(config.HOT_RANK, config.LIKE_SCORE, keys.HOT_RANK_KEY % sid)
+
+rds.sadd('%s' % user.id, *rcmd_user_id_list)
+rds.srem('RCMD-%S' % request.user.id, sid)
+rds.srandmember("", 10)
+
+
+----------------------------------------------------------
 ----------------------------------------------------------
 ----------------------------------------------------------
 ----------------------------------------------------------
