@@ -128,7 +128,143 @@ rds.sadd('%s' % user.id, *rcmd_user_id_list)
 rds.srem('RCMD-%S' % request.user.id, sid)
 rds.srandmember("", 10)
 
+----------------------------------------------------------
 
+2020/01/15 详细记录
+
+----------------------------------------------------------
+
+分布式数据库
+
+范围拆分  //
+ 优点：扩容方便  缺点：分配不均衡
+按余数拆分 %
+ 优点：分配均衡  缺点：扩容不方便
+
+Mycat数据库分库分表中间件
+
+主从、读写分离     写的命令发给主、读的命令发给从
+master <- 写操作
+ |
+ V
+slaver -> 读操作
+slaver -> 读操作
+slaver -> 读操作
+
+程序实现或者第三方代理
+
+服务高可用
+ keepalived
+ zookeeper
+ 服务器主挂，从接管
+ 1.备份
+ 2.故障转移
+ 3.交汇点，域名解析失败直接访问ip
+
+ab 压力测试 服务器压力来自用户请求
+ Ubuntu  
+  apt-get install apache2-utils
+  ab -n 1000 -c 3000 http://49.234.125.109/login/
+  netstat -nat|grep 49.234.125.109
+  ulimit -n
+     多少次  并行
+     -t 时间 -k keepalived
+
+import socket
+listen_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # 建立SOCK连接
+listen_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR)  # 设置参数
+listen_socket.bind((HOST, POST))  # 绑定 IP:端口
+listen_socket.listen(100)  # 开始监听
+
+while True:
+    client_socket, client_address = listen_socket.accept()  # 接收客户端发起的连接请求
+    request = client_socket.recv(1024) 
+
+    http_response = RESPONSE
+    client_socket.sendall(http_response)
+    client_socket.close()
+pip install gunicorn
+pip install gevent
+gunicorn -c swiper/gunicorn-config.py swiper.wsgi
+ps aux|grep gunicorn
+
+kill `cat logs/gunicorn.pid`
+
+gunicorn 
+ master只管理子进程
+ 多个worker
+
+echo测试  整个系统最大性能  8000 r/s
+curl http://49.234.125.109/login/
+
+带缓存测试  3000 r/s
+带数据库测试 300 r/s
+
+Nginx 6W r/s
+
+redis测试  11W r/s
+redis-benchmark
+
+服务器不要安装来历不明的包
+下载包 apt install
+
+cd ~/download/nginx-1.14.1
+make clean 清除makefile
+./config  检查并产生makefile
+make    执行编译
+make install
+
+服务器远程登录
+ssh root@xxx.xxx.xxx.xxx
+ssh-keygen 产生  -t ed25519 指定算法
+~/.ss/id_rsa.pub 公钥
+~/.ss/id_rsa 私钥
+
+cat ~/.ssh/authorized_keys
+
+删除
+rm -rf 
+
+上传服务器
+rsync -crvP  --exclude={.venv,.git,__pycache__,logs} ./  root@xxx.xxx.xxx.xxx:/opt/swiper/
+
+Nginx 负载均衡 
+ 轮询
+ 权重
+ IP Hash
+ 最小连接数
+
+upstream app_server{
+	server 127.0.0.1:9000 weight=10;
+	server 127.0.0.1:9000 weight=10;
+}
+
+location / {
+	
+}
+
+
+
+----------------------------------------------------------
+
+2020/01/14 详细记录
+
+----------------------------------------------------------
+----------------------------------------------------------
+
+2020/01/14 详细记录
+
+----------------------------------------------------------
+----------------------------------------------------------
+
+2020/01/14 详细记录
+
+----------------------------------------------------------
+----------------------------------------------------------
+
+2020/01/14 详细记录
+
+----------------------------------------------------------
 ----------------------------------------------------------
 ----------------------------------------------------------
 ----------------------------------------------------------
