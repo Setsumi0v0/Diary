@@ -185,7 +185,7 @@ while True:
     client_socket.close()
 pip install gunicorn
 pip install gevent
-gunicorn -c swiper/gunicorn-config.py swiper.wsgi
+gunicorn -c Jobs_web_django/gunicorn_config.py Jobs_web_django.wsgi
 ps aux|grep gunicorn
 
 kill `cat logs/gunicorn.pid`
@@ -243,13 +243,263 @@ location / {
 	
 }
 
+----------------------------------------------------------
 
+2020/01/16 详细记录
 
 ----------------------------------------------------------
 
-2020/01/14 详细记录
+修改nginx负载均衡 Gunicorn和Uwsgi需要修改的地方不一样
+https://segmentfault.com/a/1190000016108576
 
-----------------------------------------------------------
+修改uwsgi服务器
+Gunicorn作为uwsgi服务器的时候，使用gevent访问数据库会出错
+如果不用gevent可以正常使用
+
+shell脚本学习
+ apt -get
+
+服务器维护脚本
+
+#!/bash/bin
+
+# 系统更新
+system_update(){
+	echo '正在更新系统...'
+	apt update -y
+	apt upgrade -y
+	echo -e '系统更新完毕\n'
+}
+
+# 安装系统软件
+install_software(){
+	echo '正在安装系统组件...'
+	BASIC='man gcc make sudo lsof ssh openssl tree vim language-pack-zh-hans'
+	EXT='dnsutils iputils-ping net-tools psmisc sysstat'
+	NETWORK='curl telnet traceroute wget'
+	LIBS='libbz2-dev libpcre3 libpcre3-dev libreadline-dev libssl-dev zliblg-dev'
+	SOFTWARE='git mysql-server zip p7zip apache2-utils sendmail'
+	apt install -y $BASIC $EXT $NETWORK $LIBS $SOFTWARE
+
+	echo '正在清理临时文件'
+	apt autoremove
+	apt autoclean
+
+	echo '正在设置中文环境'
+	locale-gen zh_CN.UTF-8
+	export LC_ALL='zh_CN.utf8'
+	echo "export LC_ALL='zh_CN.utf8'" >> /etc/bash.bashrc
+
+	echo '正在启动邮件服务'
+	service sendmail start
+
+	echo -e '系统组件安装完毕.\n'
+}
+
+# 安装Nginx   
+# /dev/ 常用/dev/null   /dev/zero  /dev/random  /dev/urandom
+# 设备文件
+---
+f = open('/dev/zero')  # 无限产生0 比如下载3G的文件，全为0
+s = f.read(10) 
+'\x00\x00\x00\x00\x00\x00\x00\x00'
+
+伪随机 7 foo(7) -> 必然 9 foo(9) -> 71 -> 53 输入确定输出确定
+
+---
+
+install_nginx(){
+	echo '正在安装Nginx...'
+	if ! which nginx > /dev/null
+	then
+		wget -P /tmp 'http://nginx.org/download/nginx-1.14.1.tar.gz'
+		tar -xzf /tmp/nginx-1.14.1.tar.gz -C /tmp
+		cd /tmp/nginx-1.14.1
+		./configure
+		make
+		make install
+		cd -
+		rm -rf /tmp/nginx*
+		ln -s /usr/local/nginx/sbin/nginx /usr/lcal/bin/nginx
+		echo -e 'Nginx 安装完毕'
+	else
+		echo -e 'Nginx 已存在.\n'
+	fi
+}
+
+# 安装Redis
+install_redis(){
+	echo '正在安装 Redis'
+	if ! which redis-server > /dev/null
+	then
+		wget -P /tmp/ 'http://download.redis.io/releases/redis-5.0.0.tar.gz'
+		tar -xzf /tmp/redis-5.0.0.tar.gz -C /tmp
+		cd /tmp/redis-5.0.0
+		make && make install
+		cd -
+		rm -rf /tmp/redis*
+		echo -e 'Redis 安装完毕.\n'
+	else
+		echo -e 'Redis 已存在 \n'
+	fi
+}
+
+# 安装 pyenv
+install_pyenv(){
+	echo '正在安装pyenv...'
+	if ! which pyenv > /dev/null
+	then
+		curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash
+		export PATH="$HOME/ .pyenv/bin:$PATH"
+		eval "$(pyenv init -)"
+		eval "$(pyenv virtualenv-init -)"
+		echo -e 'pyenv 安装完毕. \n'
+	else
+		echo -e 'pyenv 已存在\n'
+	fi
+	pyenv update
+}
+
+# 将 pyenv 配置写入 bashrc
+set_pyenv_conf(){
+	echo '正在配置pyenv...'
+	cat >> $HOME/ .bashrc << EOF
+
+	# PyenvConfig
+	export PATH="\$HOME/ .pyenv/bin:\$PATH"
+	eval "\$(pyenv init -)"
+	eval "$(pyenv virtualenv-init -)"
+	EOF
+	source $HOME/ .bashrc
+	echo -e 'pyenv 配置完毕. \n'
+}
+
+# 编译安装 Python 3.6.7
+install_python(){
+	echo '正在安装 Python 3.6'
+	if ！ pyenv versions|grep 3.6.7 > /dev/null;
+	then
+		pyenv install -v 3.6.7
+		echo -e 'Python 3.6.7 安装完毕.\n'
+	else
+		echo 'Python 3.6.7 已存在'
+	fi
+	pyenv global 3.6.7
+}
+
+# 项目环境初始化
+project_init(){
+	echo '正在设置项目环境...'
+	proj='/opt/swiper'
+	mkdir -p $proj/{backend.frontend.deployment.data.logs}
+
+	echo '正在创建 python 运行环境...'
+	if [ ! -d $proj/.venv ];
+	then
+		python -m venv $proj/.venv
+	fi
+	source $proj/.venv/bin/activate
+	pip install -U pip
+	if [ -f $proj/requirements.txt ]; then
+		pip install -r $proj/requirements.txt
+	fi
+	deactivate
+
+	echo -e '项目环境设置完毕. \n'
+}
+
+install_all(){
+	system_update
+	install_software
+	install_naginx
+	install_redis
+	install_pyenv
+	set_pyenv_conf
+	install_python
+	project_int
+}
+
+cat << EOF
+....EOF
+
+if [[ -n $1 ]];
+then
+	input=$1
+	echo "执行操作: $1"
+else
+	read -p "请选择: " input
+fi
+
+case $input in
+	1) system_update;;
+	2) install_software;;
+	3) install_nginx;;
+	4) install_redis;;
+	5) install_pyenv;;
+	6) set_pyenv_conf;;
+	7) install_python;;
+	8) project_init;;
+	9) install_all;;
+	*) exit;;
+esac
+
+上传服务器脚本
+upload.sh
+---
+#!/bin/bash
+
+LOCAL_DIR='./'
+REMOTE_DIR='/opt/swiper'
+
+USER='root'
+HOST='35.194.171.19'
+
+rsync -crvpP  --exclude={.venv,.git,__pycache__,logs} $LOCAL_DIR/ $USER@$HOST:$REMOTE_DIR/
+
+SSH $USER@$HOST '$REMOTE_DIR/scripts/restart.sh'
+---
+
+ssh root@35.193.172.19 'ls'
+chmod 755 restart.sh
+ls
+
+开始结束脚本
+---
+start.sh
+#！/bin/bash
+
+PROJECT="/opt/swiper"
+cd $PROJECT
+source $PROJECT .venv/bin/activate
+gunicorn -c swiper/gunicorn-config.py swiper.wsgi
+deactivate
+cd -
+----
+stop.sh
+#!/bin/bash
+
+PROJECT='/opt/swiper'
+
+# 关掉 gunicorn
+cat $PROJECT/logs/gunicorn.pid | xargs kill
+----
+
+不间断重启
+软重启
+restart.sh
+#!/bin/bash
+
+PROJECT='/opt/swiper'
+
+cat $PROJECT/logs/gunicorn.pid | xargs kill -HUP
+
+从近到远     http://49.234.125.109/api/travel/near_to_far/
+价格从低到高     http://49.234.125.109/api/travel/cheap_to_expensive/
+价格从高到低     http://49.234.125.109/api/travel/expensive_to_cheap/
+评论从高到低     http://49.234.125.109/api/travel/common_more_to_less/
+详情页数据     http://49.234.125.109/api/travel/detail/
+智能排序     http://49.234.125.109/api/travel/smart_sort/
+
 ----------------------------------------------------------
 
 2020/01/14 详细记录
